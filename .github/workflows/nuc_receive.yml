@@ -116,15 +116,15 @@ jobs:
         run: |
           DOMAIN=${{ matrix.pair.domain }}
           CHUNK_FILE_PATH=${{ matrix.pair.chunk }}
-          RESULTS_DIR="scan-results"
-          OUTPUT_FILE="$RESULTS_DIR/nuclei_output_${DOMAIN}.txt"
+
           if [ ! -f "$CHUNK_FILE_PATH" ]; then
             echo "ERROR: Chunk file '$CHUNK_FILE_PATH' not found!"
             exit 1
           fi
           echo "-> Generating parent_domains.txt from raw subdomains..."
           #dsieve -if "$CHUNK_FILE_PATH" -f 2 | sort -u > parent_domains.txt
-
+          
+          OUTPUT_FILE="nuclei_output.txt"
           echo "-> Running nuc scan (100 rate-limit) against '$CHUNK_FILE_PATH'..."
           nuclei \
             -l "$CHUNK_FILE_PATH" \
@@ -178,7 +178,7 @@ jobs:
           DOMAIN="${{ matrix.pair.domain }}"
       
           # 2. Path to the file with only the new subdomains
-          FILE="scan-results/nuclei_output_${DOMAIN}.txt"
+          FILE="nuclei_output.txt"
       
           # 3. Count how many new subdomains we have
           COUNT=$(wc -l < "$FILE")
