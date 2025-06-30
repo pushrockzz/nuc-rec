@@ -136,8 +136,8 @@ jobs:
             -prc 100 \
             -nc \
             -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36' \
-            -silent \
-            -o "$OUTPUT_FILE"
+            -o "$OUTPUT_FILE" \
+            -silent > /dev/null 2>&1
             
           if [ ! -s "$OUTPUT_FILE" ]; then
             echo "No live URLs found in this chunk. Exiting early."
