@@ -128,7 +128,7 @@ jobs:
           echo "-> Running nuc scan (100 rate-limit) against '$CHUNK_FILE_PATH'..."
           nuclei \
             -l "$CHUNK_FILE_PATH" \
-            -t ~/nuclei-templates/http/exposed-panels \
+            -t ~/nuclei-templates/http/technologies \
             -ss template-spray \
             -c 10 \
             -bs 80 \
