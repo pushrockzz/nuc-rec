@@ -144,18 +144,58 @@ jobs:
             mkdir -p results
             exit 0
           fi
-          
-
-      - name: Compute SAFE_CHUNK (no slashes)
-        run: |
-          SAFE_CHUNK="${{ matrix.pair.chunk }}"
-          SAFE_CHUNK="$(echo "$SAFE_CHUNK" | tr '/' '_')"
-          echo "SAFE_CHUNK=$SAFE_CHUNK" >> $GITHUB_ENV         
       
-      - name: Upload Secondary Account httpx+dsieve Results
-        uses: actions/upload-artifact@v4
-        with:
-          # Name the artifact to clearly identify it as coming from the secondary account
-          name: secondary_httpx_dsieve_${{ matrix.pair.domain }}_${{ env.SAFE_CHUNK }}
-          path: results/
-          retention-days: 1
+      - name: Install notify
+        env: 
+          DISCORD_WEBHOOK: ${{ secrets.DIS_WEBHOOK }}
+        run: |
+          go install -v github.com/projectdiscovery/notify/cmd/notify@latest
+          mkdir -p ~/.config/notify/
+          cat <<EOF > ~/.config/notify/provider-config.yaml
+              # Write provider config with our Discord webhook
+          discord:
+            - id: "subscan"
+              discord_channel: "subdomain-scan"
+              discord_format: "{{data}}"
+              discord_webhook_url: "${{ secrets.DIS_WEBHOOK }}"
+          EOF
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+          # display and show provider-config.yaml file
+          cat ~/.config/notify/provider-config.yaml  
+     
+      - name: Show notify config
+        run: | 
+          echo "$DIS_WEBHOOK"
+          sed -e 's/.*/&/' ~/.config/notify/provider-config.yaml
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DIS_WEBHOOK }}         
+
+      - name: Notify Discord for Nuc scab
+        run: |
+          # 1. Capture today’s date and the current domain
+          DATE=$(date +"%d-%m-%Y")
+          DOMAIN="${{ matrix.pair.domain }}"
+      
+          # 2. Path to the file with only the new subdomains
+          FILE="scan-results/nuclei_output_${DOMAIN}.txt"
+      
+          # 3. Count how many new subdomains we have
+          COUNT=$(wc -l < "$FILE")
+      
+          # 4. If more than 50, send a header message, then the file
+          if [ "$COUNT" -gt 3 ]; then
+            # 4a. Send a text header with domain and date
+            echo -e "🔔 $COUNT New Entry for ${DOMAIN}\n📅 Date: ${DATE}" \
+              | notify -id subscan
+            # 4b. Send the full list as a file
+            notify -bulk -id subscan -data "$FILE"
+          else
+            # 5. If 1–50 new entries, send one bulk message including header and list
+            {
+              echo "🔔 $COUNT New Entry"
+              echo "📅 Date: ${DATE}"
+              echo
+              cat "$FILE"
+            } | notify -bulk -id subscan
+          fi      
+          
